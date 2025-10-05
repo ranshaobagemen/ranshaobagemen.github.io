@@ -5,19 +5,24 @@ Gitee：https://gitee.com/nianbroken/Firework_Simulator
 本项目采用 Apache-2.0 许可证
 简而言之，你可以自由使用、修改和分享本项目的代码，但前提是在其衍生作品中必须保留原始许可证和版权信息，并且必须以相同的许可证发布所有修改过的代码。
 */
-
+// 音频相关变量
+let bgMusic = null; // 预留一个变量用于后续加载背景音乐（bgMusic），但当前未初始化
 "use strict";
+let backgroundMusic = null; // 背景音乐音频对象
+let backgroundMusicSource = null; // 背景音乐源节点
 
 //这是一个从简单项目开始的典型例子
 //并且雪球远远超出了它的预期大小。有点笨重
 //读取/处理这个单独的文件，但不管怎样，它还是在这里:)
 
-const IS_MOBILE = window.innerWidth <= 640;
-const IS_DESKTOP = window.innerWidth > 800;
-const IS_HEADER = IS_DESKTOP && window.innerHeight < 300;
+// 通过屏幕尺寸判断设备类型，用于响应式布局或功能适配
+const IS_MOBILE = window.innerWidth <= 640;  //移动设备
+const IS_DESKTOP = window.innerWidth > 800;  //桌面
+const IS_HEADER = IS_DESKTOP && window.innerHeight < 300;  // 特殊场景——桌面端且高度<300px（可能是窄长的浏览器标签页或嵌入页面）
 // Detect high end devices. This will be a moving target.
+// 检测设备是否为“高端”（CPU核心数足够多）
 const IS_HIGH_END_DEVICE = (() => {
-	const hwConcurrency = navigator.hardwareConcurrency;
+	const hwConcurrency = navigator.hardwareConcurrency; // 获取CPU逻辑核心数（如4核、8核）
 	if (!hwConcurrency) {
 		return false;
 	}
@@ -33,6 +38,7 @@ const MAX_HEIGHT = 4320;
 const GRAVITY = 0.9; //以像素/秒为单位的加速度
 let simSpeed = 1;
 
+// 根据设备类型返回画布或UI的默认缩放比例。
 function getDefaultScaleFactor() {
 	if (IS_MOBILE) return 0.9;
 	if (IS_HEADER) return 0.75;
@@ -78,7 +84,7 @@ const mainStage = new Stage("main-canvas");
 const stages = [trailsStage, mainStage];
 
 //随机文字烟花内容
-const randomWords = ["新年快乐", "心想事成"];
+const randomWords = ["中秋节快乐"];
 const wordDotsMap = {};
 randomWords.forEach((word) => {
 	wordDotsMap[word] = MyMath.literalLattice(word, 3, "Gabriola,华文琥珀", "90px");
@@ -86,12 +92,33 @@ randomWords.forEach((word) => {
 
 // 自定义背景
 document.addEventListener("DOMContentLoaded", function () {
-	// 获取目标div元素
-	var canvasContainer = document.querySelector(".canvas-container");
-	// 设置背景图像和背景大小
-	// 在这里输入图片路径
-	canvasContainer.style.backgroundImage = "url()";
-	canvasContainer.style.backgroundSize = "100%";
+	// // 获取目标div元素
+	// var canvasContainer = document.querySelector(".canvas-container");
+	// // 设置背景图像和背景大小
+	// // 在这里输入图片路径
+	// canvasContainer.style.backgroundImage = "url('../images/background.jpg')";
+	// canvasContainer.style.backgroundSize = "100%";
+	    const canvasContainer = document.querySelector(".canvas-container");
+    
+    // 1. 确保容器有明确尺寸（避免背景无法渲染）
+    canvasContainer.style.width = "100%";
+    canvasContainer.style.height = "100vh"; // 或 "100%" 视情况而定
+    
+    // 2. 优化背景样式（使用 cover 或 contain 避免拉伸）
+    canvasContainer.style.backgroundImage = "url('../images/background.jpg')";
+    canvasContainer.style.backgroundSize = "cover"; // 保持比例并覆盖整个容器
+    canvasContainer.style.backgroundPosition = "center"; // 图片居中
+    canvasContainer.style.backgroundRepeat = "no-repeat"; // 防止平铺
+    
+    // 3. 可选：预加载背景图（避免画布渲染时背景未加载完成）
+    const bgImg = new Image();
+    bgImg.onload = () => {
+        console.log("背景图片加载成功！");
+    };
+    bgImg.onerror = () => {
+        console.error("背景图片加载失败，请检查路径！");
+    };
+    bgImg.src = "../images/background.jpg";
 });
 
 //全屏帮助程序，使用Fscreen作为前缀。
@@ -467,7 +494,20 @@ store.subscribe(renderApp);
 function handleStateChange(state, prevState) {
 	const canPlaySound = canPlaySoundSelector(state);
 	const canPlaySoundPrev = canPlaySoundSelector(prevState);
-
+	// 添加页面可见性检测
+    const isPageVisible = !document.hidden;
+ 	// 添加背景音乐控制
+    const isRunningNow = isRunning(state);
+    const wasRunning = isRunning(prevState);
+    
+    // 当烟花开始运行且音效启用时播放背景音乐
+    if (isRunningNow && !wasRunning && canPlaySound && isPageVisible) {
+        soundManager.playBackgroundMusic();
+    } 
+    // 当烟花停止运行时停止背景音乐
+    else if (!isRunningNow && wasRunning) {
+        soundManager.stopBackgroundMusic();
+    }
 	if (canPlaySound !== canPlaySoundPrev) {
 		if (canPlaySound) {
 			soundManager.resumeAll();
@@ -476,6 +516,18 @@ function handleStateChange(state, prevState) {
 		}
 	}
 }
+// 添加页面可见性变化监听器
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+        // 页面变为可见时，如果正在运行且音效启用，则恢复背景音乐
+        if (isRunning() && canPlaySoundSelector()) {
+            soundManager.playBackgroundMusic();
+        }
+    } else {
+        // 页面变为不可见时，暂停背景音乐
+        soundManager.stopBackgroundMusic();
+    }
+});
 
 store.subscribe(handleStateChange);
 
@@ -1068,6 +1120,7 @@ function seqSmallBarrage() {
 	return 3400 + barrageCount * 120;
 }
 seqSmallBarrage.cooldown = 15000;
+// seqSmallBarrage.cooldown = 3000;
 seqSmallBarrage.lastCalled = Date.now();
 
 const sequences = [seqRandomShell, seqTwoRandom, seqTriple, seqPyramid, seqSmallBarrage];
@@ -1075,7 +1128,7 @@ const sequences = [seqRandomShell, seqTwoRandom, seqTriple, seqPyramid, seqSmall
 let isFirstSeq = true;
 const finaleCount = 32;
 let currentFinaleCount = 0;
-//随机生成一个烟花序列
+//随机生成一个烟花序列（这里可以控制烟花生成的间隔时间）
 function startSequence() {
 	if (isFirstSeq) {
 		isFirstSeq = false;
@@ -1095,7 +1148,8 @@ function startSequence() {
 			return 170;
 		} else {
 			currentFinaleCount = 0;
-			return 6000;
+			// return 6000;
+			return 1000;
 		}
 	}
 
@@ -1116,6 +1170,7 @@ function startSequence() {
 	} else if (rand < 1) {
 		return seqTriple();
 	}
+	return 100;
 }
 
 let activePointerCount = 0;
@@ -1936,7 +1991,8 @@ class Shell {
 		//爆炸回调
 		comet.onDeath = (comet) => this.burst(comet.x, comet.y);
 
-		soundManager.playSound("lift");
+		// 上升过程中的音效
+		//soundManager.playSound("lift");
 	}
 
 	/**
@@ -2401,37 +2457,58 @@ const soundManager = {
 	ctx: new (window.AudioContext || window.webkitAudioContext)(),
 	sources: {
 		lift: {
-			volume: 1,
+			volume: 0.4,
 			playbackRateMin: 0.85,
 			playbackRateMax: 0.95,
 			fileNames: ["lift1.mp3", "lift2.mp3", "lift3.mp3"],
 		},
 		burst: {
-			volume: 1,
+			volume: 0.4,
 			playbackRateMin: 0.8,
 			playbackRateMax: 0.9,
 			fileNames: ["burst1.mp3", "burst2.mp3"],
 		},
 		burstSmall: {
-			volume: 0.25,
+			volume: 0.15,
 			playbackRateMin: 0.8,
 			playbackRateMax: 1,
 			fileNames: ["burst-sm-1.mp3", "burst-sm-2.mp3"],
 		},
 		crackle: {
-			volume: 0.2,
+			volume: 0.1,
 			playbackRateMin: 1,
 			playbackRateMax: 1,
 			fileNames: ["crackle1.mp3"],
 		},
 		crackleSmall: {
-			volume: 0.3,
+			volume: 0.15,
 			playbackRateMin: 1,
 			playbackRateMax: 1,
 			fileNames: ["crackle-sm-1.mp3"],
 		},
 	},
-
+   // 添加背景音乐预加载方法
+    preloadBackgroundMusic() {
+        const musicURL = this.baseURL + "background.mp3"; // 假设背景音乐文件名为 background.mp3
+        return fetch(musicURL)
+            .then(response => {
+                if (response.status >= 200 && response.status < 300) {
+                    return response.arrayBuffer();
+                }
+                throw new Error("Background music not found");
+            })
+            .then(data => {
+                return new Promise((resolve) => {
+                    this.ctx.decodeAudioData(data, (buffer) => {
+                        backgroundMusic = buffer;
+                        resolve();
+                    });
+                });
+            })
+            .catch(error => {
+                console.warn("Background music failed to load:", error);
+            });
+    },
 	preload() {
 		const allFilePromises = [];
 
@@ -2470,12 +2547,18 @@ const soundManager = {
 				source.buffers = buffers;
 			});
 		});
-
+        // 添加背景音乐预加载
+        allFilePromises.push(this.preloadBackgroundMusic());
 		return Promise.all(allFilePromises);
 	},
 
 	pauseAll() {
 		this.ctx.suspend();
+		// 暂停背景音乐
+        if (backgroundMusicSource) {
+            backgroundMusicSource.stop();
+            backgroundMusicSource = null;
+        }
 	},
 
 	resumeAll() {
@@ -2489,9 +2572,45 @@ const soundManager = {
 		// sound, show a tooltip that they should tap again to enable sound.
 		setTimeout(() => {
 			this.ctx.resume();
+			// 恢复背景音乐
+            this.playBackgroundMusic();
 		}, 250);
 	},
+    // 播放背景音乐的方法
+    playBackgroundMusic() {
+        // 如果没有加载背景音乐或音乐已在播放，则返回
+        if (!backgroundMusic) {
+            return;
+        }
 
+        // 只在音效启用时播放背景音乐
+        if (!soundEnabledSelector()) {
+            return;
+        }
+		// 如果音乐已在播放，则不重复播放
+		if (backgroundMusicSource) {
+			return;
+		}
+        const gainNode = this.ctx.createGain();
+        gainNode.gain.value = 0.4; // 设置背景音乐音量为30%
+
+        const bufferSource = this.ctx.createBufferSource();
+        bufferSource.buffer = backgroundMusic;
+        bufferSource.loop = true; // 循环播放
+        bufferSource.connect(gainNode);
+        gainNode.connect(this.ctx.destination);
+        bufferSource.start(0);
+
+        backgroundMusicSource = bufferSource;
+    },
+
+    // 停止背景音乐的方法
+    stopBackgroundMusic() {
+        if (backgroundMusicSource) {
+            backgroundMusicSource.stop();
+            backgroundMusicSource = null;
+        }
+    },
 	// Private property used to throttle small burst sounds.
 	_lastSmallBurstTime: 0,
 
@@ -2575,11 +2694,17 @@ if (IS_HEADER) {
 		// 只加载 soundManager
 		var promises = [soundManager.preload()];
 
-		// 在 soundManager 加载完毕后调用 init
-		Promise.all(promises).then(init, (reason) => {
-			console.log("资源文件加载失败");
-			init();
-			return Promise.reject(reason);
-		});
+ // 在 soundManager 加载完毕后调用 init
+        Promise.all(promises).then(() => {
+            init();
+            // 如果初始状态是运行且音效启用，则播放背景音乐
+            if (isRunning() && canPlaySoundSelector()) {
+                soundManager.playBackgroundMusic();
+            }
+        }, (reason) => {
+            console.log("资源文件加载失败");
+            init();
+            return Promise.reject(reason);
+        });
 	}, 0);
 }

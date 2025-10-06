@@ -105,7 +105,7 @@ document.addEventListener("DOMContentLoaded", function () {
     canvasContainer.style.height = "100vh"; // 或 "100%" 视情况而定
     
     // 2. 优化背景样式（使用 cover 或 contain 避免拉伸）
-    canvasContainer.style.backgroundImage = "url('../images/background.jpg')";
+    canvasContainer.style.backgroundImage = "url('../images/background_1.png')";
     canvasContainer.style.backgroundSize = "cover"; // 保持比例并覆盖整个容器
     canvasContainer.style.backgroundPosition = "center"; // 图片居中
     canvasContainer.style.backgroundRepeat = "no-repeat"; // 防止平铺
@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", function () {
     bgImg.onerror = () => {
         console.error("背景图片加载失败，请检查路径！");
     };
-    bgImg.src = "../images/background.jpg";
+    bgImg.src = "../images/background_1.png";
 });
 
 //全屏帮助程序，使用Fscreen作为前缀。

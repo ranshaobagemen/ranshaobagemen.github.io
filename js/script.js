@@ -1743,23 +1743,41 @@ function createParticleArc(start, arcLength, count, randomness, particleFactory)
 	}
 }
 
-//获取字体点阵信息
+// //获取字体点阵信息
+// function getWordDots(word) {
+// 	if (!word) return null;
+// 	// var res = wordDotsMap[word];
+// 	// if (!res) {
+// 	//     wordDotsMap[word] = MyMath.literalLattice(word);
+// 	//     res = wordDotsMap[word];
+// 	// }
+
+// 	//随机字体大小 60~130
+// 	var fontSize = Math.floor(Math.random() * 70 + 60);
+
+// 	var res = MyMath.literalLattice(word, 3, "Gabriola,华文琥珀", fontSize + "px");
+
+// 	return res;
+// }
+// 替换原有的 getWordDots 函数，自适应屏幕
 function getWordDots(word) {
 	if (!word) return null;
-	// var res = wordDotsMap[word];
-	// if (!res) {
-	//     wordDotsMap[word] = MyMath.literalLattice(word);
-	//     res = wordDotsMap[word];
-	// }
-
-	//随机字体大小 60~130
-	var fontSize = Math.floor(Math.random() * 70 + 60);
-
+	
+	// 根据屏幕宽度动态计算字体大小
+	let fontSize;
+	if (IS_MOBILE) {
+		// 手机端字体大小范围 30~60
+		fontSize = Math.floor(Math.random() * 30 + 30);
+	} else {
+		// 桌面端字体大小范围 60~130
+		fontSize = Math.floor(Math.random() * 70 + 60);
+	}
+	
+	// 使用动态字体大小生成文字点阵
 	var res = MyMath.literalLattice(word, 3, "Gabriola,华文琥珀", fontSize + "px");
-
+	
 	return res;
 }
-
 /**
  * 用于创建球形粒子爆发的辅助对象。
  *
@@ -1823,11 +1841,22 @@ function createWordBurst(wordText, particleFactory, center_x, center_y) {
 	var color = randomColor();
 	var strobed = Math.random() < 0.5;
 	var strobeColor = strobed ? randomColor() : color;
+	
+	// 添加边界检查，确保文字烟花不会超出屏幕
+	const margin = 50; // 距离屏幕边缘的最小距离
+	const maxX = stageW - margin;
+	const maxY = stageH - margin;
+	const minX = margin;
+	const minY = margin;
 
 	for (let i = 0; i < map.points.length; i++) {
 		const point = map.points[i];
 		let x = center_x + (point.x - dcenterX);
 		let y = center_y + (point.y - dcenterY);
+		
+		// 确保粒子不会超出屏幕边界
+		x = Math.max(minX, Math.min(maxX, x));
+		y = Math.max(minY, Math.min(maxY, y));
 		particleFactory({ x, y }, color, strobed, strobeColor);
 	}
 }
@@ -2221,7 +2250,9 @@ class Shell {
 		}
 
 		if (!this.disableWordd && store.state.config.wordShell) {
-			if (Math.random() < 0.1) {
+			// 在移动端降低文字烟花的触发概率，避免过于密集
+			const wordProbability = IS_MOBILE ? 0.05 : 0.1;
+			if (Math.random() < wordProbability) {
 				if (Math.random() < 0.5) {
 					createWordBurst(randomWord(), dotStarFactory, x, y);
 				}

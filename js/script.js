@@ -2254,7 +2254,7 @@ class Shell {
 
 		if (!this.disableWordd && store.state.config.wordShell) {
 			// 在移动端降低文字烟花的触发概率，避免过于密集
-			const wordProbability = IS_MOBILE ? 0.05 : 0.1;
+			const wordProbability = IS_MOBILE ? 0.5 : 0.6;
 			if (Math.random() < wordProbability) {
 				if (Math.random() < 0.5) {
 					createWordBurst(randomWord(), dotStarFactory, x, y);

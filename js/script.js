@@ -1145,11 +1145,12 @@ function startSequence() {
 		seqRandomFastShell();
 		if (currentFinaleCount < finaleCount) {
 			currentFinaleCount++;
-			return 170;
+			// 手机端减缓发射速度
+			return IS_MOBILE ? 300 : 170; // 手机端间隔更长
 		} else {
 			currentFinaleCount = 0;
 			// return 6000;
-			return 1000;
+			return IS_MOBILE ? 2000 : 1000; // 手机端间隔更长
 		}
 	}
 
@@ -1162,15 +1163,15 @@ function startSequence() {
 	if (rand < 0.1) {
 		return seqPyramid();
 	}
-
-	if (rand < 0.6 && !IS_HEADER) {
+	// 手机端降低烟花发射频率
+	if (rand < (IS_MOBILE ? 0.4 : 0.6) && !IS_HEADER) {
 		return seqRandomShell();
-	} else if (rand < 0.8) {
+	} else if (rand < (IS_MOBILE ? 0.6 : 0.8)) {
 		return seqTwoRandom();
-	} else if (rand < 1) {
+	} else if (rand < (IS_MOBILE ? 0.8 : 1)) {
 		return seqTriple();
 	}
-	return 100;
+	return IS_MOBILE ? 200 : 100; // 手机端基础间隔更长
 }
 
 let activePointerCount = 0;

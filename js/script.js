@@ -104,21 +104,23 @@ document.addEventListener("DOMContentLoaded", function () {
     canvasContainer.style.width = "100%";
     canvasContainer.style.height = "100vh"; // 或 "100%" 视情况而定
     
-    // 2. 优化背景样式（使用 cover 或 contain 避免拉伸）
-    canvasContainer.style.backgroundImage = "url('../images/background_1.png')";
+	// 2. 根据设备类型选择不同的背景图片
+    const backgroundImg = IS_MOBILE ? "../images/background_1.png" : "../images/background_2.png";
+        // 3. 优化背景样式（使用 cover 或 contain 避免拉伸）
+    canvasContainer.style.backgroundImage = `url('${backgroundImg}')`;
     canvasContainer.style.backgroundSize = "cover"; // 保持比例并覆盖整个容器
     canvasContainer.style.backgroundPosition = "center"; // 图片居中
     canvasContainer.style.backgroundRepeat = "no-repeat"; // 防止平铺
     
-    // 3. 可选：预加载背景图（避免画布渲染时背景未加载完成）
+ // 4. 预加载背景图（避免画布渲染时背景未加载完成）
     const bgImg = new Image();
     bgImg.onload = () => {
-        console.log("背景图片加载成功！");
+        console.log(`背景图片 ${IS_MOBILE ? 'background_1.png' : 'background_2.png'} 加载成功！`);
     };
     bgImg.onerror = () => {
         console.error("背景图片加载失败，请检查路径！");
     };
-    bgImg.src = "../images/background_1.png";
+    bgImg.src = backgroundImg;
 });
 
 //全屏帮助程序，使用Fscreen作为前缀。

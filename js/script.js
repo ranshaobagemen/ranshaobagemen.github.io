@@ -1296,7 +1296,7 @@ function updateGlobals(timeStep, lag) {
 	if (store.state.config.autoLaunch) {
 		autoLaunchTime -= timeStep;
 		if (autoLaunchTime <= 0) {
-			autoLaunchTime = startSequence() * 1.25;
+			autoLaunchTime = startSequence() * (IS_MOBILE ? 1.8 : 1.25); // 手机端增加间隔;
 		}
 	}
 }
@@ -1949,7 +1949,7 @@ class Shell {
 
 		// Set default starCount if needed, will be based on shell size and scale exponentially, like a sphere's surface area.
 		if (!this.starCount) {
-			const density = options.starDensity || 1;
+			const density = options.starDensity || (IS_MOBILE ? 0.7 : 1); // 手机端降低密度
 			const scaledSize = this.spreadSize / 54;
 			this.starCount = Math.max(6, scaledSize * scaledSize * density);
 		}
